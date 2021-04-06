@@ -7,6 +7,7 @@
 
 import express from 'express'
 import helmet from 'helmet'
+import cors from 'cors'
 import session from 'express-session'
 import logger from 'morgan'
 import { router } from './routes/router.js'
@@ -19,6 +20,11 @@ const main = async () => {
 
   // Set various HTTP headers to make the application little more secure (https://www.npmjs.com/package/helmet).
   app.use(helmet())
+
+  // Enable CORS.
+  app.use(cors({
+    methods: ['GET', 'POST']
+  }))
 
   // Set up a morgan logger using the dev format for log entries.
   app.use(logger('dev'))
