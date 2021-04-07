@@ -21,10 +21,18 @@ const main = async () => {
   // Set various HTTP headers to make the application little more secure (https://www.npmjs.com/package/helmet).
   app.use(helmet())
 
+  // Setup CORS options.
+  const corsOptions = {
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+
+  if (app.get('env') !== 'production') {
+    corsOptions.origin = 'http://localhost:4200'
+  }
+
   // Enable CORS.
-  app.use(cors({
-    methods: ['GET', 'POST']
-  }))
+  app.use(cors(corsOptions))
 
   // Set up a morgan logger using the dev format for log entries.
   app.use(logger('dev'))
