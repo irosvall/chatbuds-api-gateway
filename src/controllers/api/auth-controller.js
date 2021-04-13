@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import createError from 'http-errors'
 import fetch from 'node-fetch'
 
 /**
@@ -27,13 +26,9 @@ export class AuthController {
         body: JSON.stringify(req.body)
       })
 
-      if (response.status !== 201) {
-        next(createError(response.status))
-      } else {
-        res
-          .status(response.status)
-          .json(await response.json())
-      }
+      res
+        .status(response.status)
+        .send(await response.json())
     } catch (error) {
       next(error)
     }
