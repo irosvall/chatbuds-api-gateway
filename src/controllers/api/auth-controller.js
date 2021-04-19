@@ -92,9 +92,17 @@ export class AuthController {
    */
   async register (req, res, next) {
     try {
-      const response = await this.request(req, next, 'api/v1/register')
+      const authResponse = await this.request(req, next, 'api/v1/register')
 
-      await this.sendEmptyIfOKResponse(res, response)
+      let resourceResponse
+      // Creates a user in the resource service
+      if (authResponse.status === 201) {
+        resourceResponse = await this.createUserInResourceService(req, next)
+
+        await this.sendEmptyIfOKResponse(res, resourceResponse)
+      } else {
+        await this.sendEmptyIfOKResponse(res, authResponse)
+      }
     } catch (error) {
       next(error)
     }
@@ -136,6 +144,33 @@ export class AuthController {
       res.end()
     } else {
       res.send(await apiResponse.json())
+    }
+  }
+
+  /**
+   * Creates the user at the resource service.
+   *
+   * @param {object} req - Express request object.
+   * @param {Function} next - Express next middleware function.
+   * @returns {object} - The response from the server.
+   */
+  async createUserInResourceService (req, next) {
+    try {
+      const response = await fetch(`${process.env.RESOURCE_SERVICE_URL}api/v1/user`, {
+        method: 'POST',
+        body: JSON.stringify({
+          username: req.body.username,
+          email: req.body.email
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      return response
+    } catch (error) {
+      // TODO: Delete account from auth service.
+      next(error)
     }
   }
 }
