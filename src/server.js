@@ -9,13 +9,20 @@ import express from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
 import session from 'express-session'
+import mongoose from 'mongoose'
+import connectMongo from 'connect-mongo'
 import logger from 'morgan'
 import { router } from './routes/router.js'
+import { connectDB } from './config/mongoose.js'
 
 /**
  * The main function of the application.
  */
 const main = async () => {
+  await connectDB()
+
+  const MongoStore = connectMongo(session)
+
   const app = express()
 
   // Set various HTTP headers to make the application little more secure (https://www.npmjs.com/package/helmet).
@@ -40,10 +47,17 @@ const main = async () => {
   // Parse requests of the content type application/json.
   app.use(express.json())
 
+  // Setup the session storage.
+  const sessionStore = new MongoStore({
+    mongooseConnection: mongoose.connection,
+    collection: 'sessions'
+  })
+
   // Setup and use session middleware.
   const sessionOptions = {
     name: process.env.SESSION_NAME,
     secret: process.env.SESSION_SECRET,
+    store: sessionStore,
     resave: false, // Resave even if a request is not changing the session.
     saveUninitialized: false, // Don't save a created but not modified session.
     cookie: {
