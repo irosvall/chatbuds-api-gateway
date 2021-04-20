@@ -6,7 +6,7 @@
  */
 
 import express from 'express'
-import { AuthController } from '../../../../controllers/api/auth-controller.js'
+import { AuthController } from '../../../controllers/api/auth-controller.js'
 
 export const router = express.Router()
 
@@ -20,3 +20,8 @@ router.post('/register',
 router.post('/login',
   (req, res, next) => controller.checkIfAnonymous(req, res, next),
   (req, res, next) => controller.login(req, res, next))
+
+// Sends status 200 OK if logged in, otherwise 404.
+router.post('/isLoggedIn',
+  (req, res, next) => controller.checkIfLoggedIn(req, res, next),
+  (req, res) => res.status(200).end())
