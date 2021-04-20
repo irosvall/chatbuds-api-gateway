@@ -99,9 +99,9 @@ export class AuthController {
       if (authResponse.status === 201) {
         resourceResponse = await this.createUserInResourceService(req, next)
 
-        await this.sendEmptyIfOKResponse(res, resourceResponse)
+        await this.sendResponse(res, next, resourceResponse)
       } else {
-        await this.sendEmptyIfOKResponse(res, authResponse)
+        await this.sendResponse(res, next, authResponse)
       }
     } catch (error) {
       next(error)
@@ -109,7 +109,7 @@ export class AuthController {
   }
 
   /**
-   * Sends a request to the authentication server.
+   * Sends a request to the authentication service.
    *
    * @param {object} req - Express request object.
    * @param {Function} next - Express next middleware function.
@@ -131,19 +131,25 @@ export class AuthController {
   }
 
   /**
-   * Sends an empty body response if the API response status is in between 200-299,
-   * otherwise send JSON in the body.
+   * Sends the response. If the response can't be converted to JSON an empty body is sent.
    *
    * @param {object} res - Express response object.
+   * @param {Function} next - Express next middleware function.
    * @param {object} apiResponse - Response from the API.
+   * @returns {object} An object containing the HTTP request options.
    */
-  async sendEmptyIfOKResponse (res, apiResponse) {
-    res
-      .status(apiResponse.status)
-    if (apiResponse.ok) {
-      res.end()
-    } else {
-      res.send(await apiResponse.json())
+  async sendResponse (res, next, apiResponse) {
+    try {
+      res
+        .status(apiResponse.status)
+      try {
+        const body = await apiResponse.json()
+        res.send(body)
+      } catch (error) {
+        res.end()
+      }
+    } catch (error) {
+      next(error)
     }
   }
 

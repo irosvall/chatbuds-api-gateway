@@ -1,5 +1,5 @@
 /**
- * API version 1 auth routes.
+ * Authentication routes.
  *
  * @author Ida Rosvall <ir222gn@student.lnu.se>
  * @version 1.0.0
@@ -17,6 +17,7 @@ router.post('/register',
   (req, res, next) => controller.checkIfAnonymous(req, res, next),
   (req, res, next) => controller.register(req, res, next))
 
+// POST login
 router.post('/login',
   (req, res, next) => controller.checkIfAnonymous(req, res, next),
   (req, res, next) => controller.login(req, res, next))
