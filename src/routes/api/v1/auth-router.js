@@ -22,6 +22,11 @@ router.post('/login',
   (req, res, next) => controller.checkIfAnonymous(req, res, next),
   (req, res, next) => controller.login(req, res, next))
 
+// POST logout
+router.post('/logout',
+  (req, res, next) => controller.checkIfLoggedIn(req, res, next),
+  (req, res, next) => controller.logout(req, res, next))
+
 // Sends status 200 OK if logged in, otherwise 404.
 router.post('/isLoggedIn',
   (req, res, next) => controller.checkIfLoggedIn(req, res, next),

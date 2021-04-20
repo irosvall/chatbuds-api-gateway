@@ -84,6 +84,25 @@ export class AuthController {
   }
 
   /**
+   * Logs out an user by destroying its session cookie.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async logout (req, res, next) {
+    try {
+      await req.session.destroy()
+
+      res
+        .status(200)
+        .end()
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  /**
    * Creates an account.
    *
    * @param {object} req - Express request object.
