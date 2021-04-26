@@ -12,8 +12,10 @@ import session from 'express-session'
 import mongoose from 'mongoose'
 import connectMongo from 'connect-mongo'
 import logger from 'morgan'
+import http from 'http'
 import { router } from './routes/router.js'
 import { connectDB } from './config/mongoose.js'
+import { Server } from 'socket.io'
 
 /**
  * The main function of the application.
@@ -30,7 +32,7 @@ const main = async () => {
 
   // Setup CORS options.
   const corsOptions = {
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
     credentials: true
   }
 
@@ -73,7 +75,34 @@ const main = async () => {
     sessionOptions.cookie.secure = true
   }
 
+  // Socket.io: Add socket.io to the Express project
+  const server = http.createServer(app)
+  const io = new Server(server, { cors: corsOptions })
+
+  // Socket.io; Loggs when users connect/disconnect
+  io.on('connection', (socket) => {
+    console.log('a user connected')
+
+    io.emit('message', 'Welcome to ChatBuds!')
+
+    socket.on('disconnect', () => {
+      console.log('user disconnected')
+    })
+  })
+
+  io.on('connect_error', (err) => {
+    console.log(`connect_error due to ${err.message}`)
+  })
+
   app.use(session(sessionOptions))
+
+  // middleware to be executed before the routes.
+  app.use((req, res, next) => {
+    // Socket.io: Add Socket.io to the Response-object to make it available in controllers.
+    res.io = io
+
+    next()
+  })
 
   // Register routes.
   app.use('/', router)
@@ -105,7 +134,7 @@ const main = async () => {
   })
 
   // Starts the HTTP server listening for connections.
-  app.listen(process.env.PORT, () => {
+  server.listen(process.env.PORT, () => {
     console.log(`Server running at http://localhost:${process.env.PORT}`)
     console.log('Press Ctrl-C to terminate...')
   })
