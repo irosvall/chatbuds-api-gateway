@@ -65,6 +65,7 @@ export class AuthController {
         req.session.regenerate((error) => {
           if (!error) {
             req.session.access_token = responseBody.access_token
+            req.session.username = responseBody.user.username
 
             res
               .status(response.status)

@@ -11,8 +11,10 @@ import cors from 'cors'
 import session from 'express-session'
 import mongoose from 'mongoose'
 import connectMongo from 'connect-mongo'
+import cookie from 'cookie'
 import logger from 'morgan'
 import http from 'http'
+import createError from 'http-errors'
 import { router } from './routes/router.js'
 import { connectDB } from './config/mongoose.js'
 import { Server } from 'socket.io'
@@ -75,9 +77,43 @@ const main = async () => {
     sessionOptions.cookie.secure = true
   }
 
+  app.use(session(sessionOptions))
+
   // Socket.io: Add socket.io to the Express project
   const server = http.createServer(app)
   const io = new Server(server, { cors: corsOptions })
+
+  // Socket.io: Add the user's session properties to socket.handshake.auth.
+  io.use((socket, next) => {
+    let sessionID = socket.handshake.auth.sessionID
+
+    // If socket doesn't have a sessionID then parse the cookie to retrieve it.
+    if (!sessionID) {
+      sessionID = cookie.parse(socket.handshake.headers.cookie)['chatbuds-session']
+        .substring(2)
+        .split('.')[0]
+    }
+    if (sessionID) {
+      // Retrieve session from storage
+      let session
+      sessionStore.get(sessionID, (error, retrievedSession) => {
+        if (error) {
+          return next(error)
+        }
+        session = retrievedSession
+
+        // If a session exists add its properties to the socket handshake property.
+        if (session) {
+          socket.handshake.auth.sessionID = sessionID
+          socket.handshake.auth.access_token = session.access_token
+          socket.handshake.auth.username = session.username
+          return next()
+        } else {
+          throw createError(401)
+        }
+      })
+    }
+  })
 
   // Socket.io; Loggs when users connect/disconnect
   io.on('connection', (socket) => {
@@ -85,16 +121,33 @@ const main = async () => {
 
     io.emit('message', 'Welcome to ChatBuds!')
 
+    // Validation of public messages.
+    socket.on('publicMessage', (data) => {
+      if (!data.message) {
+        socket.emit('validationError', 'The data property contains no message property')
+      } else if (typeof data.message !== 'string') {
+        socket.emit('validationError', 'message is not a string.')
+      } else if (data.message.length < 1) {
+        socket.emit('validationError', 'The message must contain at least 1 character.')
+      } else if (data.message.length > 500) {
+        socket.emit('validationError', 'The message has extended the limit of 500 characters.')
+      } else {
+        io.emit('publicMessage', { message: data.message, sender: { username: socket.handshake.auth.username } })
+      }
+    })
+
     socket.on('disconnect', () => {
       console.log('user disconnected')
     })
-  })
 
-  io.on('connect_error', (err) => {
-    console.log(`connect_error due to ${err.message}`)
-  })
+    socket.on('connect_error', (err) => {
+      console.log(`connect_error due to ${err.message}`)
+    })
 
-  app.use(session(sessionOptions))
+    socket.on('error', (err) => {
+      console.log(`error due to ${err.message}`)
+    })
+  })
 
   // middleware to be executed before the routes.
   app.use((req, res, next) => {
