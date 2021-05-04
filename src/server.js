@@ -11,9 +11,13 @@ import cors from 'cors'
 import session from 'express-session'
 import mongoose from 'mongoose'
 import connectMongo from 'connect-mongo'
+import cookie from 'cookie'
 import logger from 'morgan'
+import http from 'http'
+import createError from 'http-errors'
 import { router } from './routes/router.js'
 import { connectDB } from './config/mongoose.js'
+import { Server } from 'socket.io'
 
 /**
  * The main function of the application.
@@ -30,7 +34,7 @@ const main = async () => {
 
   // Setup CORS options.
   const corsOptions = {
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
     credentials: true
   }
 
@@ -75,6 +79,84 @@ const main = async () => {
 
   app.use(session(sessionOptions))
 
+  // Socket.io: Add socket.io to the Express project
+  const server = http.createServer(app)
+  const io = new Server(server, { cors: corsOptions })
+
+  // Socket.io: Add the user's session properties to socket.handshake.auth.
+  io.use((socket, next) => {
+    let sessionID = socket.handshake.auth.sessionID
+
+    // If socket doesn't have a sessionID then parse the cookie to retrieve it.
+    if (!sessionID) {
+      sessionID = cookie.parse(socket.handshake.headers.cookie)['chatbuds-session']
+        .substring(2)
+        .split('.')[0]
+    }
+    if (sessionID) {
+      // Retrieve session from storage
+      let session
+      sessionStore.get(sessionID, (error, retrievedSession) => {
+        if (error) {
+          return next(error)
+        }
+        session = retrievedSession
+
+        // If a session exists add its properties to the socket handshake property.
+        if (session) {
+          socket.handshake.auth.sessionID = sessionID
+          socket.handshake.auth.access_token = session.access_token
+          socket.handshake.auth.username = session.username
+          return next()
+        } else {
+          throw createError(401)
+        }
+      })
+    }
+  })
+
+  // Socket.io; Loggs when users connect/disconnect
+  io.on('connection', (socket) => {
+    console.log('a user connected')
+
+    io.emit('message', 'Welcome to ChatBuds!')
+
+    // Validation of public messages.
+    socket.on('publicMessage', (data) => {
+      if (!data.message) {
+        socket.emit('validationError', 'The data property contains no message property')
+      } else if (typeof data.message !== 'string') {
+        socket.emit('validationError', 'message is not a string.')
+      } else if (data.message.length < 1) {
+        socket.emit('validationError', 'The message must contain at least 1 character.')
+      } else if (data.message.length > 500) {
+        socket.emit('validationError', 'The message has extended the limit of 500 characters.')
+      } else {
+        io.emit('publicMessage', { message: data.message, sender: { username: socket.handshake.auth.username } })
+      }
+    })
+
+    socket.on('disconnect', () => {
+      console.log('user disconnected')
+    })
+
+    socket.on('connect_error', (err) => {
+      console.log(`connect_error due to ${err.message}`)
+    })
+
+    socket.on('error', (err) => {
+      console.log(`error due to ${err.message}`)
+    })
+  })
+
+  // middleware to be executed before the routes.
+  app.use((req, res, next) => {
+    // Socket.io: Add Socket.io to the Response-object to make it available in controllers.
+    res.io = io
+
+    next()
+  })
+
   // Register routes.
   app.use('/', router)
 
@@ -105,7 +187,7 @@ const main = async () => {
   })
 
   // Starts the HTTP server listening for connections.
-  app.listen(process.env.PORT, () => {
+  server.listen(process.env.PORT, () => {
     console.log(`Server running at http://localhost:${process.env.PORT}`)
     console.log('Press Ctrl-C to terminate...')
   })

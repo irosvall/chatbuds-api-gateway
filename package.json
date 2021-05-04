@@ -21,6 +21,7 @@
   "private": true,
   "dependencies": {
     "connect-mongo": "^3.2.0",
+    "cookie": "^0.4.1",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-session": "^1.17.1",
@@ -28,7 +29,8 @@
     "http-errors": "^1.8.0",
     "mongoose": "^5.12.4",
     "morgan": "^1.10.0",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "socket.io": "^4.0.1"
   },
   "devDependencies": {
     "@lnu/eslint-config": "^1.1.2",
