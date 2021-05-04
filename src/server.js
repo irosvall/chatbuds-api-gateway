@@ -83,9 +83,9 @@ const main = async () => {
   const server = http.createServer(app)
   const io = new Server(server, { cors: corsOptions })
 
-  // Socket.io: Add the user's session properties to socket.handshake.auth.
+  // Socket.io: Add the user's session properties to socket.user.
   io.use((socket, next) => {
-    let sessionID = socket.handshake.auth.sessionID
+    let sessionID = socket.user?.sessionID
 
     // If socket doesn't have a sessionID then parse the cookie to retrieve it.
     if (!sessionID) {
@@ -102,21 +102,27 @@ const main = async () => {
         }
         session = retrievedSession
 
-        // If a session exists add its properties to the socket handshake property.
+        // If a session exists add its properties to the socket user property.
         if (session) {
-          socket.handshake.auth.sessionID = sessionID
-          socket.handshake.auth.access_token = session.access_token
-          socket.handshake.auth.username = session.username
+          socket.user = {
+            sessionID: sessionID,
+            userID: session.userID,
+            access_token: session.access_token,
+            username: session.username
+          }
           return next()
         } else {
-          throw createError(401)
+          next(createError(401))
         }
       })
+    } else {
+      next(createError(401))
     }
   })
 
   // Socket.io; Loggs when users connect/disconnect
   io.on('connection', (socket) => {
+    socket.join(socket.user.userID)
     console.log('a user connected')
 
     io.emit('message', 'Welcome to ChatBuds!')
@@ -132,7 +138,7 @@ const main = async () => {
       } else if (data.message.length > 500) {
         socket.emit('validationError', 'The message has extended the limit of 500 characters.')
       } else {
-        io.emit('publicMessage', { message: data.message, sender: { username: socket.handshake.auth.username } })
+        io.emit('publicMessage', { message: data.message, sender: { username: socket.user.username } })
       }
     })
 
