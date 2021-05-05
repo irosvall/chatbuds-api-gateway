@@ -35,6 +35,19 @@ export class RandomChatService {
   }
 
   /**
+   * Removes the user from the queue if it exist there.
+   *
+   * @param {socket} socket - The user's socket connection.
+   */
+  leaveQueue (socket) {
+    const userIndex = this._chatQueue.findIndex(user => user.socket.user.userID === socket.user.userID)
+
+    if (userIndex !== -1) {
+      this._chatQueue.splice(userIndex, 1)
+    }
+  }
+
+  /**
    * Search for a chatting match and emits socket event when found.
    */
   _searchChatBuddy () {

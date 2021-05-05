@@ -132,6 +132,14 @@ const main = async () => {
       randomChatService.joinQueue(socket, socket.user.previousChatBuddy)
     })
 
+    socket.on('randomChatLeave', ({ to }) => {
+      randomChatService.leaveQueue(socket)
+
+      if (to !== undefined) {
+        io.to(to).emit('randomChatLeave')
+      }
+    })
+
     io.emit('message', 'Welcome to ChatBuds!')
 
     socket.on('privateMessage', ({ data, to }) => {
