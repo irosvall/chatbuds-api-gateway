@@ -18,6 +18,7 @@ import createError from 'http-errors'
 import { router } from './routes/router.js'
 import { connectDB } from './config/mongoose.js'
 import { Server } from 'socket.io'
+import { RandomChatService } from './services/random-chat-service.js'
 
 /**
  * The main function of the application.
@@ -120,12 +121,38 @@ const main = async () => {
     }
   })
 
+  const randomChatService = new RandomChatService()
+
   // Socket.io; Loggs when users connect/disconnect
   io.on('connection', (socket) => {
     socket.join(socket.user.userID)
     console.log('a user connected')
 
+    socket.on('randomChatJoin', () => {
+      randomChatService.joinQueue(socket, socket.user.previousChatBuddy)
+    })
+
     io.emit('message', 'Welcome to ChatBuds!')
+
+    socket.on('privateMessage', ({ data, to }) => {
+      if (!data.message) {
+        socket.emit('validationError', 'The data property contains no message property')
+      } else if (typeof data.message !== 'string') {
+        socket.emit('validationError', 'message is not a string.')
+      } else if (data.message.length < 1) {
+        socket.emit('validationError', 'The message must contain at least 1 character.')
+      } else if (data.message.length > 500) {
+        socket.emit('validationError', 'The message has extended the limit of 500 characters.')
+      } else {
+        io.to(to).to(socket.user.userID).emit('privateMessage', {
+          message: data.message,
+          sender: {
+            username: socket.user.username,
+            userID: socket.user.userID
+          }
+        })
+      }
+    })
 
     // Validation of public messages.
     socket.on('publicMessage', (data) => {
@@ -138,7 +165,13 @@ const main = async () => {
       } else if (data.message.length > 500) {
         socket.emit('validationError', 'The message has extended the limit of 500 characters.')
       } else {
-        io.emit('publicMessage', { message: data.message, sender: { username: socket.user.username } })
+        io.emit('publicMessage', {
+          message: data.message,
+          sender: {
+            username: socket.user.username,
+            userID: socket.user.userID
+          }
+        })
       }
     })
 
