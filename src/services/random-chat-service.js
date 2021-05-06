@@ -20,13 +20,14 @@ export class RandomChatService {
    * Makes the user join the chat queue.
    *
    * @param {socket} socket - The user's socket connection.
+   * @param {string} previousChatBuddy - The user ID of the user's previous chat buddy.
    */
-  joinQueue (socket) {
+  joinQueue (socket, previousChatBuddy) {
     const isSameUser = this._chatQueue.some(element => element.socket.user.userID === socket.user.userID)
 
     if (!isSameUser) {
       this._chatQueue.push({
-        previousChatBuddy: undefined,
+        previousChatBuddy: previousChatBuddy,
         socket
       })
 
@@ -62,7 +63,8 @@ export class RandomChatService {
           }
         } else {
           matchIndex = this._chatQueue.findIndex(otherUser =>
-            this._chatQueue[i].previousChatBuddy !== otherUser.previousChatBuddy &&
+            otherUser.previousChatBuddy !== this._chatQueue[i].socket.user.userID &&
+            this._chatQueue[i].previousChatBuddy !== otherUser.socket.user.userID &&
             this._chatQueue[i].socket.user.userID !== otherUser.socket.user.userID)
         }
 

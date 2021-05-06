@@ -128,8 +128,8 @@ const main = async () => {
     socket.join(socket.user.userID)
     console.log('a user connected')
 
-    socket.on('randomChatJoin', () => {
-      randomChatService.joinQueue(socket, socket.user.previousChatBuddy)
+    socket.on('randomChatJoin', ({ options }) => {
+      randomChatService.joinQueue(socket, options?.previousChatBuddy)
     })
 
     socket.on('randomChatLeave', ({ to }) => {
