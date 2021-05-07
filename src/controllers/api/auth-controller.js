@@ -61,10 +61,14 @@ export class AuthController {
       const responseBody = await response.json()
 
       if (response.status === 200) {
-        // Regenerates session and add the JWT access token to it.
+        // Regenerates session and add JWT access token to it.
         req.session.regenerate((error) => {
           if (!error) {
             req.session.access_token = responseBody.access_token
+<<<<<<< src/controllers/api/auth-controller.js
+            req.session.userID = responseBody.user.id
+=======
+>>>>>>> src/controllers/api/auth-controller.js
             req.session.username = responseBody.user.username
 
             res
@@ -117,7 +121,8 @@ export class AuthController {
       let resourceResponse
       // Creates a user in the resource service
       if (authResponse.status === 201) {
-        resourceResponse = await this.createUserInResourceService(req, next)
+        const user = await authResponse.json()
+        resourceResponse = await this.createUserInResourceService(next, user)
 
         await this.sendResponse(res, next, resourceResponse)
       } else {
@@ -176,17 +181,18 @@ export class AuthController {
   /**
    * Creates the user at the resource service.
    *
-   * @param {object} req - Express request object.
    * @param {Function} next - Express next middleware function.
+   * @param {object} user - The user created in the auth service.
    * @returns {object} - The response from the server.
    */
-  async createUserInResourceService (req, next) {
+  async createUserInResourceService (next, user) {
     try {
       const response = await fetch(`${process.env.RESOURCE_SERVICE_URL}api/v1/user`, {
         method: 'POST',
         body: JSON.stringify({
-          username: req.body.username,
-          email: req.body.email
+          username: user.username,
+          userID: user.id,
+          email: user.email
         }),
         headers: {
           'Content-Type': 'application/json'

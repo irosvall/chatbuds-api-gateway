@@ -18,6 +18,10 @@ import createError from 'http-errors'
 import { router } from './routes/router.js'
 import { connectDB } from './config/mongoose.js'
 import { Server } from 'socket.io'
+<<<<<<< src/server.js
+import { RandomChatService } from './services/random-chat-service.js'
+=======
+>>>>>>> src/server.js
 
 /**
  * The main function of the application.
@@ -66,7 +70,7 @@ const main = async () => {
     saveUninitialized: false, // Don't save a created but not modified session.
     cookie: {
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: Number(process.env.SESSION_AGE),
       sameSite: 'lax'
     }
   }
@@ -83,9 +87,15 @@ const main = async () => {
   const server = http.createServer(app)
   const io = new Server(server, { cors: corsOptions })
 
+<<<<<<< src/server.js
+  // Socket.io: Add the user's session properties to socket.user.
+  io.use((socket, next) => {
+    let sessionID = socket.user?.sessionID
+=======
   // Socket.io: Add the user's session properties to socket.handshake.auth.
   io.use((socket, next) => {
     let sessionID = socket.handshake.auth.sessionID
+>>>>>>> src/server.js
 
     // If socket doesn't have a sessionID then parse the cookie to retrieve it.
     if (!sessionID) {
@@ -102,6 +112,67 @@ const main = async () => {
         }
         session = retrievedSession
 
+<<<<<<< src/server.js
+        // If a session exists add its properties to the socket user property.
+        if (session) {
+          socket.user = {
+            sessionID: sessionID,
+            userID: session.userID,
+            access_token: session.access_token,
+            username: session.username
+          }
+          return next()
+        } else {
+          next(createError(401))
+        }
+      })
+    } else {
+      next(createError(401))
+    }
+  })
+
+  const randomChatService = new RandomChatService()
+
+  // Socket.io; Loggs when users connect/disconnect
+  io.on('connection', (socket) => {
+    socket.join(socket.user.userID)
+    console.log('a user connected')
+
+    socket.on('randomChatJoin', ({ options }) => {
+      randomChatService.joinQueue(socket, options?.previousChatBuddy)
+    })
+
+    socket.on('randomChatLeave', ({ to }) => {
+      randomChatService.leaveQueue(socket)
+
+      if (to !== undefined) {
+        io.to(to).emit('randomChatLeave')
+      }
+    })
+
+    io.emit('message', 'Welcome to ChatBuds!')
+
+    socket.on('privateMessage', ({ data, to }) => {
+      if (!data.message) {
+        socket.emit('validationError', 'The data property contains no message property')
+      } else if (typeof data.message !== 'string') {
+        socket.emit('validationError', 'message is not a string.')
+      } else if (data.message.length < 1) {
+        socket.emit('validationError', 'The message must contain at least 1 character.')
+      } else if (data.message.length > 500) {
+        socket.emit('validationError', 'The message has extended the limit of 500 characters.')
+      } else {
+        io.to(to).to(socket.user.userID).emit('privateMessage', {
+          message: data.message,
+          sender: {
+            username: socket.user.username,
+            userID: socket.user.userID
+          }
+        })
+      }
+    })
+
+=======
         // If a session exists add its properties to the socket handshake property.
         if (session) {
           socket.handshake.auth.sessionID = sessionID
@@ -121,6 +192,7 @@ const main = async () => {
 
     io.emit('message', 'Welcome to ChatBuds!')
 
+>>>>>>> src/server.js
     // Validation of public messages.
     socket.on('publicMessage', (data) => {
       if (!data.message) {
@@ -132,7 +204,17 @@ const main = async () => {
       } else if (data.message.length > 500) {
         socket.emit('validationError', 'The message has extended the limit of 500 characters.')
       } else {
+<<<<<<< src/server.js
+        io.emit('publicMessage', {
+          message: data.message,
+          sender: {
+            username: socket.user.username,
+            userID: socket.user.userID
+          }
+        })
+=======
         io.emit('publicMessage', { message: data.message, sender: { username: socket.handshake.auth.username } })
+>>>>>>> src/server.js
       }
     })
 
