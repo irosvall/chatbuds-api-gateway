@@ -67,7 +67,7 @@ const main = async () => {
     saveUninitialized: false, // Don't save a created but not modified session.
     cookie: {
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: Number(process.env.SESSION_AGE),
       sameSite: 'lax'
     }
   }
