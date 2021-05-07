@@ -18,10 +18,7 @@ import createError from 'http-errors'
 import { router } from './routes/router.js'
 import { connectDB } from './config/mongoose.js'
 import { Server } from 'socket.io'
-<<<<<<< src/server.js
 import { RandomChatService } from './services/random-chat-service.js'
-=======
->>>>>>> src/server.js
 
 /**
  * The main function of the application.
@@ -87,15 +84,9 @@ const main = async () => {
   const server = http.createServer(app)
   const io = new Server(server, { cors: corsOptions })
 
-<<<<<<< src/server.js
   // Socket.io: Add the user's session properties to socket.user.
   io.use((socket, next) => {
     let sessionID = socket.user?.sessionID
-=======
-  // Socket.io: Add the user's session properties to socket.handshake.auth.
-  io.use((socket, next) => {
-    let sessionID = socket.handshake.auth.sessionID
->>>>>>> src/server.js
 
     // If socket doesn't have a sessionID then parse the cookie to retrieve it.
     if (!sessionID) {
@@ -112,7 +103,6 @@ const main = async () => {
         }
         session = retrievedSession
 
-<<<<<<< src/server.js
         // If a session exists add its properties to the socket user property.
         if (session) {
           socket.user = {
@@ -172,27 +162,6 @@ const main = async () => {
       }
     })
 
-=======
-        // If a session exists add its properties to the socket handshake property.
-        if (session) {
-          socket.handshake.auth.sessionID = sessionID
-          socket.handshake.auth.access_token = session.access_token
-          socket.handshake.auth.username = session.username
-          return next()
-        } else {
-          throw createError(401)
-        }
-      })
-    }
-  })
-
-  // Socket.io; Loggs when users connect/disconnect
-  io.on('connection', (socket) => {
-    console.log('a user connected')
-
-    io.emit('message', 'Welcome to ChatBuds!')
-
->>>>>>> src/server.js
     // Validation of public messages.
     socket.on('publicMessage', (data) => {
       if (!data.message) {
@@ -204,7 +173,6 @@ const main = async () => {
       } else if (data.message.length > 500) {
         socket.emit('validationError', 'The message has extended the limit of 500 characters.')
       } else {
-<<<<<<< src/server.js
         io.emit('publicMessage', {
           message: data.message,
           sender: {
@@ -212,9 +180,6 @@ const main = async () => {
             userID: socket.user.userID
           }
         })
-=======
-        io.emit('publicMessage', { message: data.message, sender: { username: socket.handshake.auth.username } })
->>>>>>> src/server.js
       }
     })
 
