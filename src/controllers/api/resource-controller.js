@@ -59,7 +59,7 @@ export class ResourceController {
         })
 
         res.io.to(req.session.userID).emit('newFriend', {
-          user: this._getUserInformation(req.params.userID)
+          user: await this._getUserInformation(req, next, req.params.userID)
         })
       }
 

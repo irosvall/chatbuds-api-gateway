@@ -20,6 +20,6 @@ const controller = new ResourceController()
 router.patch('/user/friendrequest/:userID', (req, res, next) => controller.sendFriendRequest(req, res, next))
 
 // PATCH user/acceptfriend/:userID
-router.patch('/user/acceptfriend/:userID', (req, res, next) => controller.sendFriendRequest(req, res, next))
+router.patch('/user/acceptfriend/:userID', (req, res, next) => controller.acceptFriendRequest(req, res, next))
 
 router.all('*', (req, res, next) => controller.request(req, res, next))
