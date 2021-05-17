@@ -26,3 +26,9 @@ router.post('/login',
 router.post('/logout',
   (req, res, next) => controller.checkIfLoggedIn(req, res, next),
   (req, res, next) => controller.logout(req, res, next))
+
+// DELETE user
+router.delete('/delete',
+  (req, res, next) => controller.checkIfLoggedIn(req, res, next),
+  (req, res, next) => controller.deleteUser(req, res, next)
+)
