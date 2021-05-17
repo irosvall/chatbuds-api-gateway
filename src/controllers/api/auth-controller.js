@@ -131,6 +131,36 @@ export class AuthController {
   }
 
   /**
+   * Deletes the user.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async deleteUser (req, res, next) {
+    try {
+      const options = {
+        method: 'DELETE',
+        headers: {
+          authorization: 'Bearer ' + req.session.access_token
+        }
+      }
+
+      const authResponse = await fetch(`${process.env.AUTH_SERVICE_URL}api/v1/user`, options)
+
+      if (authResponse.ok) {
+        const resourceResponse = await fetch(`${process.env.RESOURCE_SERVICE_URL}api/v1/user`, options)
+
+        await this.sendResponse(res, next, resourceResponse)
+      } else {
+        await this.sendResponse(res, next, authResponse)
+      }
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  /**
    * Sends a request to the authentication service.
    *
    * @param {object} req - Express request object.
