@@ -157,6 +157,27 @@ const main = async () => {
           sender: {
             username: socket.user.username,
             userID: socket.user.userID
+          },
+          to: to
+        })
+      }
+    })
+
+    socket.on('randomMessage', ({ data, to }) => {
+      if (!data.message) {
+        socket.emit('validationError', 'The data property contains no message property')
+      } else if (typeof data.message !== 'string') {
+        socket.emit('validationError', 'message is not a string.')
+      } else if (data.message.length < 1) {
+        socket.emit('validationError', 'The message must contain at least 1 character.')
+      } else if (data.message.length > 500) {
+        socket.emit('validationError', 'The message has extended the limit of 500 characters.')
+      } else {
+        io.to(to).to(socket.user.userID).emit('randomMessage', {
+          message: data.message,
+          sender: {
+            username: socket.user.username,
+            userID: socket.user.userID
           }
         })
       }
