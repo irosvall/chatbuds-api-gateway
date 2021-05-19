@@ -16,5 +16,8 @@ Build system:
 Code Linting:
     stage: test
 
+    before_script:
+        - npx install-peerdeps --dev @lnu/eslint-config
+
     script:
-        - npm run lint
+        - npx eslint
