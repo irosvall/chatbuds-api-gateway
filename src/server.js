@@ -14,11 +14,10 @@ import connectMongo from 'connect-mongo'
 import cookie from 'cookie'
 import logger from 'morgan'
 import http from 'http'
-import createError from 'http-errors'
 import { router } from './routes/router.js'
 import { connectDB } from './config/mongoose.js'
 import { Server } from 'socket.io'
-import { RandomChatService } from './services/random-chat-service.js'
+import { SocketService } from './services/socket/socket-service.js'
 
 /**
  * The main function of the application.
@@ -80,120 +79,56 @@ const main = async () => {
 
   app.use(session(sessionOptions))
 
-  // Socket.io: Add socket.io to the Express project
+  // Socket.io; Add socket.io to the Express project
   const server = http.createServer(app)
   const io = new Server(server, { cors: corsOptions })
 
-  // Socket.io: Add the user's session properties to socket.user.
+  // Socket.io middleware; Add the user's session properties to socket.user.
   io.use((socket, next) => {
-    let sessionID = socket.user?.sessionID
+    try {
+      let sessionID = socket.user?.sessionID
 
-    // If socket doesn't have a sessionID then parse the cookie to retrieve it.
-    if (!sessionID) {
-      sessionID = cookie.parse(socket.handshake.headers.cookie)['chatbuds-session']
-        .substring(2)
-        .split('.')[0]
-    }
-    if (sessionID) {
-      // Retrieve session from storage
-      let session
-      sessionStore.get(sessionID, (error, retrievedSession) => {
-        if (error) {
-          return next(error)
+      // If socket doesn't have a sessionID then parse the cookie to retrieve it.
+      if (!sessionID) {
+        if (typeof socket.handshake.headers.cookie === 'string') {
+          sessionID = cookie.parse(socket.handshake.headers.cookie)['chatbuds-session']
+            .substring(2)
+            .split('.')[0]
         }
-        session = retrievedSession
-
-        // If a session exists add its properties to the socket user property.
-        if (session) {
-          socket.user = {
-            sessionID: sessionID,
-            userID: session.userID,
-            access_token: session.access_token,
-            username: session.username
+      }
+      if (sessionID) {
+        // Retrieve session from storage
+        let session
+        sessionStore.get(sessionID, (error, retrievedSession) => {
+          if (error) {
+            return next(new Error('Unauthorized'))
           }
-          return next()
-        } else {
-          next(createError(401))
-        }
-      })
-    } else {
-      next(createError(401))
+          session = retrievedSession
+
+          // If a session exists add its properties to the socket user property.
+          if (session) {
+            socket.user = {
+              sessionID: sessionID,
+              userID: session.userID,
+              access_token: session.access_token,
+              username: session.username
+            }
+            return next()
+          }
+        })
+      } else {
+        return next(new Error('Unauthorized'))
+      }
+    } catch (error) {
+      next(new Error('Internal server error'))
     }
   })
 
-  const randomChatService = new RandomChatService()
+  const socketService = new SocketService(io)
 
-  // Socket.io; Loggs when users connect/disconnect
+  // Socket.io; Setup a socket service for the connected user.
   io.on('connection', (socket) => {
-    socket.join(socket.user.userID)
-    console.log('a user connected')
-
-    socket.on('randomChatJoin', ({ options }) => {
-      randomChatService.joinQueue(socket, options?.previousChatBuddy)
-    })
-
-    socket.on('randomChatLeave', ({ to }) => {
-      randomChatService.leaveQueue(socket)
-
-      if (to !== undefined) {
-        io.to(to).emit('randomChatLeave')
-      }
-    })
-
-    io.emit('message', 'Welcome to ChatBuds!')
-
-    socket.on('privateMessage', ({ data, to }) => {
-      if (!data.message) {
-        socket.emit('validationError', 'The data property contains no message property')
-      } else if (typeof data.message !== 'string') {
-        socket.emit('validationError', 'message is not a string.')
-      } else if (data.message.length < 1) {
-        socket.emit('validationError', 'The message must contain at least 1 character.')
-      } else if (data.message.length > 500) {
-        socket.emit('validationError', 'The message has extended the limit of 500 characters.')
-      } else {
-        io.to(to).to(socket.user.userID).emit('privateMessage', {
-          message: data.message,
-          sender: {
-            username: socket.user.username,
-            userID: socket.user.userID
-          }
-        })
-      }
-    })
-
-    // Validation of public messages.
-    socket.on('publicMessage', (data) => {
-      if (!data.message) {
-        socket.emit('validationError', 'The data property contains no message property')
-      } else if (typeof data.message !== 'string') {
-        socket.emit('validationError', 'message is not a string.')
-      } else if (data.message.length < 1) {
-        socket.emit('validationError', 'The message must contain at least 1 character.')
-      } else if (data.message.length > 500) {
-        socket.emit('validationError', 'The message has extended the limit of 500 characters.')
-      } else {
-        io.emit('publicMessage', {
-          message: data.message,
-          sender: {
-            username: socket.user.username,
-            userID: socket.user.userID
-          }
-        })
-      }
-    })
-
-    socket.on('disconnect', () => {
-      console.log('user disconnected')
-    })
-
-    socket.on('connect_error', (err) => {
-      console.log(`connect_error due to ${err.message}`)
-    })
-
-    socket.on('error', (err) => {
-      console.log(`error due to ${err.message}`)
-    })
+    socketService.setup(socket)
   })
 
   // middleware to be executed before the routes.
