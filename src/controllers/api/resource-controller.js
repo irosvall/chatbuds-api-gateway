@@ -70,6 +70,38 @@ export class ResourceController {
   }
 
   /**
+   * Removes a specified friend.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async removeFriend (req, res, next) {
+    try {
+      const options = this.createOptions(req, next)
+
+      const response = await fetch(`${process.env.RESOURCE_SERVICE_URL}api/v1${req.url}`, options)
+
+      if (response.ok) {
+        res.io.to(req.params.userID).emit('removeFriend', {
+          user: {
+            username: req.session.username,
+            userID: req.session.userID
+          }
+        })
+
+        res.io.to(req.session.userID).emit('removeFriend', {
+          user: await this._getUserInformation(req, next, req.params.userID)
+        })
+      }
+
+      await this.sendResponse(res, next, response)
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  /**
    * Sends a request to the resource service.
    *
    * @param {object} req - Express request object.

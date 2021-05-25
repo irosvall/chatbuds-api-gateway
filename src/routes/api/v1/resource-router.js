@@ -22,4 +22,7 @@ router.patch('/user/friendrequest/:userID', (req, res, next) => controller.sendF
 // PATCH user/acceptfriend/:userID
 router.patch('/user/acceptfriend/:userID', (req, res, next) => controller.acceptFriendRequest(req, res, next))
 
+// DELETE user/removeFriend/:userID
+router.delete('/user/removeFriend/:userID', (req, res, next) => controller.removeFriend(req, res, next))
+
 router.all('*', (req, res, next) => controller.request(req, res, next))
