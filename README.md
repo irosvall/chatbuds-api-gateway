@@ -222,7 +222,7 @@ The .env file should contain:
 
 (replace the description next to "=" with its desired value)
 
-### Enter "npm install" in the terminal to build the dependecies
+### Enter "npm install" in the terminal to build the dependencies
 
 ## Running API Gateway
 Development mode: enter "npm run start:dev" in the terminal.
