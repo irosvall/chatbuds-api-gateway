@@ -5,14 +5,41 @@ The API gateway for the ChatBuds application is responsible for handling request
 ## System overview
 ChatBuds is built as a small microservice-architecture. The consumer/client only communicates with the API Gateway which handles the back-end communication.
 
-The client: https://gitlab.lnu.se/1dv613/student/ir222gn/projects/chatbuds
+The client: https://github.com/irosvall/chatbuds-client
 
-The Authentication Service: https://gitlab.lnu.se/1dv613/student/ir222gn/projects/auth-service
+The Authentication Service: https://github.com/irosvall/chatbuds-auth-service
 
-The Resource Service: https://gitlab.lnu.se/1dv613/student/ir222gn/projects/resource-service
+The Resource Service: https://github.com/irosvall/chatbuds-resource-service
 
 
 ![Architecture](./.readme/chatbuds-architecture.png)
+
+## Starting up this project locally
+To run the API Gateway locally you will need to add a .env file to the root of the project.
+
+The .env file should contain:
+
+- PORT= which port the API Gateway should run on
+- SESSION_NAME= the session (cookie) name
+- SESSION_SECRET= the session secret
+- SESSION_AGE= how long a session (cookie) lasts
+- AUTH_SERVICE_URL= root URL to the auth service
+- RESOURCE_SERVICE_URL= root URL to the resource service
+- DB_CONNECTION_STRING= the database connection string
+
+(replace the description next to "=" with its desired value)
+
+#### Enter "npm install" in the terminal to build the dependencies
+
+### Running API Gateway
+Development mode: enter "npm run start:dev" in the terminal.
+
+Production mode: enter "npm start" in the terminal.
+
+### Linting the code
+Check for linting problems by entering "npm run lint" in the terminal.
+
+Fix linting problems automatically by entering "npm run lint:fix" in the terminal.
 
 ## API documentation
 
@@ -206,30 +233,3 @@ Example recieved value:
   }
 }
 ```
-
-## Starting up this project locally
-To run the API Gateway locally you will need to add a .env file to the root of the project.
-
-The .env file should contain:
-
-- PORT= which port the API Gateway should run on
-- SESSION_NAME= the session (cookie) name
-- SESSION_SECRET= the session secret
-- SESSION_AGE= how long a session (cookie) lasts
-- AUTH_SERVICE_URL= root URL to the auth service
-- RESOURCE_SERVICE_URL= root URL to the resource service
-- DB_CONNECTION_STRING= the database connection string
-
-(replace the description next to "=" with its desired value)
-
-### Enter "npm install" in the terminal to build the dependencies
-
-## Running API Gateway
-Development mode: enter "npm run start:dev" in the terminal.
-
-Production mode: enter "npm start" in the terminal.
-
-## Linting the code
-Check for linting problems by entering "npm run lint" in the terminal.
-
-Fix linting problems automatically by entering "npm run lint:fix" in the terminal.
